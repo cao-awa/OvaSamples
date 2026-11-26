@@ -1,0 +1,68 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '2.4.0'
+    id 'com.gradleup.shadow' version '9.6.1'
+}
+
+group = 'com.github.kusa233'
+version = project.version_name
+def ovatoxin_version = project.ovatoxin_version
+
+// Gradle's Jar/ShadowJar tasks generate their own manifest and ignore a MANIFEST.MF that is merely
+// present under src/main/resources. Point both tasks at the resource file so its contents
+// (Main-Class, etc.) actually become the archive manifest instead of being dropped.
+def manifestFile = file('src/main/resources/META-INF/MANIFEST.MF')
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+def javafxVersion = '25.0.5'
+def javafxPlatform
+def os = System.getProperty("os.name").toLowerCase()
+def arch = System.getProperty("os.arch").toLowerCase()
+def aarch64 = arch.contains("aarch64") || arch.contains("arm64")
+if (os.contains("win")) {
+    javafxPlatform = "win"
+} else if (os.contains("mac")) {
+    javafxPlatform = aarch64 ? "mac-aarch64" : "mac"
+} else if (os.contains("linux")) {
+    javafxPlatform = aarch64 ? "linux-aarch64" : "linux"
+} else {
+    throw new GradleException("Unsupported platform for JavaFX: ${os}/${arch}")
+}
+
+dependencies {
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+
+    implementation "com.github.cao-awa:Ovatoxin:${ovatoxin_version}"
+
+    api "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"
+    api "org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}"
+    api "org.openjfx:javafx-controls:${javafxVersion}:${javafxPlatform}"
+}
+
+jar {
+    manifest {
+        from manifestFile
+    }
+}
+
+shadowJar {
+    archiveBaseName.set('OvaSamples')
+    archiveVersion.set(project.version_name)
+    archiveClassifier.set('')
+    manifest {
+        from manifestFile
+    }
+}
+
+kotlin {
+    jvmToolchain(25)
+}
+
+test {
+    useJUnitPlatform()
+}
