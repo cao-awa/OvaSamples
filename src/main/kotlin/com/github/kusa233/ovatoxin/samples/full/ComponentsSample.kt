@@ -1,6 +1,8 @@
 package com.github.kusa233.ovatoxin.samples.full
 
 import com.github.kusa233.ovatoxin.component.SurfaceScope
+import com.github.kusa233.ovatoxin.i18n.I18N
+import com.github.kusa233.ovatoxin.i18n.translatable
 import com.github.kusa233.ovatoxin.layout.percent
 import com.github.kusa233.ovatoxin.layout.px
 import com.github.kusa233.ovatoxin.state.State
@@ -25,6 +27,7 @@ import com.github.kusa233.ovatoxin.widget.input.CheckBox
 import com.github.kusa233.ovatoxin.widget.input.ComboBox
 import com.github.kusa233.ovatoxin.widget.input.TextField
 import com.github.kusa233.ovatoxin.widget.list.ListView
+import com.github.kusa233.ovatoxin.widget.media.VideoPane
 import com.github.kusa233.ovatoxin.widget.progress.ProgressBar
 import com.github.kusa233.ovatoxin.widget.progress.progressBar
 import com.github.kusa233.ovatoxin.widget.text.Link
@@ -33,6 +36,7 @@ import com.github.kusa233.ovatoxin.window.Frame
 import javafx.application.Platform
 import javafx.scene.paint.Color
 import javafx.scene.text.TextAlignment
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -70,37 +74,83 @@ private data class ListEntry(
     val detail: String,
 )
 
+private data class Language(val code: String, val label: String)
+
+private val LANGUAGES = listOf(
+    Language("zh-cn", "简体中文"),
+    Language("en-us", "English"),
+    Language("ja-jp", "日本語"),
+)
+
+/**
+ * Registers every translation used by the I18N sample. The first [I18N.lang] call also fixes the
+ * initial language (Simplified Chinese), so calling this once before the page is built is enough.
+ */
+private fun registerI18nTranslations() {
+    I18N.lang("zh-cn", "i18n.headline", "多语言（I18N）示例")
+    I18N.lang("zh-cn", "i18n.intro", "Ovatoxin 通过 I18N 注册表集中管理多语言文本。把 \"key\".translatable 作为文本内容后，运行时切换语言即可让界面文字自动刷新，无需重新创建任何控件。")
+    I18N.lang("zh-cn", "i18n.label.language", "界面语言")
+    I18N.lang("zh-cn", "i18n.greeting", "你好，世界！")
+    I18N.lang("zh-cn", "i18n.button.switch", "切换到下一语言")
+    I18N.lang("zh-cn", "i18n.compare.title", "普通字符串与 Translatable 的区别")
+    I18N.lang("zh-cn", "i18n.compare.literal", "普通字符串：原样显示键名，永不翻译。")
+    I18N.lang("zh-cn", "i18n.compare.translatable", "Translatable：显示当前语言的翻译结果。")
+    I18N.lang("zh-cn", "i18n.compare.note", "上面两行使用同一个键 i18n.greeting：普通 String 展示键名，Translatable 展示翻译；切换语言时只有 Translatable 会变化。")
+
+    I18N.lang("en-us", "i18n.headline", "Multilingual (I18N) sample")
+    I18N.lang("en-us", "i18n.intro", "Ovatoxin centralises multilingual text in the I18N registry. Once a text is given a \"key\".translatable, switching the language at runtime refreshes it automatically — no widget has to be rebuilt.")
+    I18N.lang("en-us", "i18n.label.language", "Interface language")
+    I18N.lang("en-us", "i18n.greeting", "Hello, world!")
+    I18N.lang("en-us", "i18n.button.switch", "Switch to next language")
+    I18N.lang("en-us", "i18n.compare.title", "Plain String vs. Translatable")
+    I18N.lang("en-us", "i18n.compare.literal", "Plain String: shows the key verbatim, never translated.")
+    I18N.lang("en-us", "i18n.compare.translatable", "Translatable: shows the translation for the current language.")
+    I18N.lang("en-us", "i18n.compare.note", "Both lines above use the same key i18n.greeting: the plain String shows the key, the Translatable shows the translation; only the Translatable changes when the language switches.")
+
+    I18N.lang("ja-jp", "i18n.headline", "多言語（I18N）サンプル")
+    I18N.lang("ja-jp", "i18n.intro", "Ovatoxin は I18N レジストリでテキストの多言語化を管理します。\"key\".translatable を指定しておけば、実行中に言語を切り替えるだけで表示が自動更新され、ウィジェットを作り直す必要はありません。")
+    I18N.lang("ja-jp", "i18n.label.language", "表示言語")
+    I18N.lang("ja-jp", "i18n.greeting", "こんにちは、世界！")
+    I18N.lang("ja-jp", "i18n.button.switch", "次の言語に切り替え")
+    I18N.lang("ja-jp", "i18n.compare.title", "通常の String と Translatable の違い")
+    I18N.lang("ja-jp", "i18n.compare.literal", "通常の文字列：キーをそのまま表示し、翻訳されません。")
+    I18N.lang("ja-jp", "i18n.compare.translatable", "Translatable：現在の言語の翻訳を表示します。")
+    I18N.lang("ja-jp", "i18n.compare.note", "上の 2 行は同じキー i18n.greeting を使っています。通常の String はキーを、Translatable は翻訳を表示し、言語を切り替えると Translatable だけが変化します。")
+}
+
 private val FEATURES = listOf(
-    Feature("▤", "TextArea", "只读文本块，支持换行与对齐。", 1, BRAND),
-    Feature("⌨", "TextField", "单行输入、占位提示与输入监听。", 2, MINT),
-    Feature("⬢", "Button", "扁平按钮、圆角、禁用与点击反馈。", 3, AMBER),
-    Feature("◐", "ProgressBar", "圆角进度条，可自定义前景色。", 4, VIOLET),
-    Feature("☰", "ListView", "可选中的滚动列表与详情联动。", 5, ROSE),
-    Feature("☑", "CheckBox", "勾选状态与 onChange 事件。", 6, Color.web("#0ea5e9")),
-    Feature("▦", "FlexBox", "自动换行的流式布局与间距。", 7, Color.web("#14b8a6")),
-    Feature("▭", "Div", "百分比作用域、嵌套面板与裁剪。", 8, Color.web("#6366f1")),
-    Feature("▢", "Card", "圆角面板、内边距与自定义描边。", 9, Color.web("#64748b")),
-    Feature("▥", "CollapsePane", "可收起/展开、内容区自带纵向滚动的面板。", 10, Color.web("#0ea5e9")),
-    Feature("≣", "ComboBox", "可下拉选择的输入字段与实时项。", 11, Color.web("#d946ef")),
-    Feature("↗", "Link", "打开 URL 或自定义点击行为的文字链接。", 12, Color.web("#2563eb")),
-    Feature("◍", "Toast", "自动消失的浮层提示，按类型着色。", 13, Color.web("#0f766e")),
+    Feature("▤", "TextArea", "features.description.1", 1, BRAND),
+    Feature("⌨", "TextField", "features.description.2", 2, MINT),
+    Feature("⬢", "Button", "features.description.3", 3, AMBER),
+    Feature("◐", "ProgressBar", "features.description.4", 4, VIOLET),
+    Feature("☰", "ListView", "features.description.5", 5, ROSE),
+    Feature("☑", "CheckBox", "features.description.6", 6, Color.web("#0ea5e9")),
+    Feature("▦", "FlexBox", "features.description.7", 7, Color.web("#14b8a6")),
+    Feature("▭", "Div", "features.description.8", 8, Color.web("#6366f1")),
+    Feature("▢", "Card", "features.description.9", 9, Color.web("#64748b")),
+    Feature("▥", "CollapsePane", "features.description.10", 10, Color.web("#0ea5e9")),
+    Feature("≣", "ComboBox", "features.description.11", 11, Color.web("#d946ef")),
+    Feature("↗", "Link", "features.description.12", 12, Color.web("#2563eb")),
+    Feature("◍", "Toast", "features.description.13", 13, Color.web("#0f766e")),
+    Feature("文", "I18N", "features.description.14", 14, Color.web("#0ea5e9")),
+    Feature("▶", "VideoPane", "features.description.15", 15, Color.web("#ef4444")),
 )
 
 private val ENTRIES = listOf(
-    ListEntry("◈", "Ovatoxin", "基于 Kotlin DSL 的 JavaFX 组件集合"),
-    ListEntry("▤", "TextArea", "只读文本与说明文字的最佳载体"),
-    ListEntry("⌨", "TextField", "轻量、可编辑的单行输入框"),
-    ListEntry("⬢", "Button", "带圆角与过渡的扁平按钮"),
-    ListEntry("◐", "ProgressBar", "支持前景色定制的进度反馈"),
-    ListEntry("☰", "ListView", "可滚动、可选择的数据列表"),
-    ListEntry("☑", "CheckBox", "带状态回调的勾选控件"),
-    ListEntry("▦", "FlexBox", "从左到右自动换行的布局容器"),
-    ListEntry("▭", "Div", "以百分比为基准的嵌套绘制面板"),
-    ListEntry("▢", "Card", "带内边距与圆角的卡片容器"),
-    ListEntry("▥", "CollapsePane", "可收起、展开并滚动的面板"),
-    ListEntry("≣", "ComboBox", "可下拉选择的输入字段"),
-    ListEntry("↗", "Link", "点击打开网址的超链接文字"),
-    ListEntry("◍", "Toast", "自动消失、按类型着色的浮层提示"),
+    ListEntry("◈", "Ovatoxin", "entries.detail.1"),
+    ListEntry("▤", "TextArea", "entries.detail.2"),
+    ListEntry("⌨", "TextField", "entries.detail.3"),
+    ListEntry("⬢", "Button", "entries.detail.4"),
+    ListEntry("◐", "ProgressBar", "entries.detail.5"),
+    ListEntry("☰", "ListView", "entries.detail.6"),
+    ListEntry("☑", "CheckBox", "entries.detail.7"),
+    ListEntry("▦", "FlexBox", "entries.detail.8"),
+    ListEntry("▭", "Div", "entries.detail.9"),
+    ListEntry("▢", "Card", "entries.detail.10"),
+    ListEntry("▥", "CollapsePane", "entries.detail.11"),
+    ListEntry("≣", "ComboBox", "entries.detail.12"),
+    ListEntry("↗", "Link", "entries.detail.13"),
+    ListEntry("◍", "Toast", "entries.detail.14"),
 )
 
 /**
@@ -261,6 +311,40 @@ private val CODE_SAMPLES: Map<String, String> = mapOf(
             tone = ToastTone.SUCCESS,
         )
     """,
+    "I18N 多语言" to """
+        // 先注册各语言文本（首个 lang 调用同时确定初始语言）
+        I18N.lang("zh-cn", "greeting", "你好，世界！")
+        I18N.lang("en-us", "greeting", "Hello, world!")
+
+        // 语言选择器：切换后所有 Translatable 文本都会自动刷新
+        val combo = draw(ComboBox(LANGUAGES) { it.label }) { c ->
+            layout {
+                width = 100.percent
+                height = 44.px
+            }
+            c.onSelectItem { language -> I18N.currentLang = language.code }
+        }
+
+        // 用 "key".translatable 作为内容即可自动翻译
+        text("greeting".translatable, height = 48.px, size = 24.0, bold = true)
+    """,
+    "VideoPane" to """
+        val video = draw(VideoPane("classpath:/media/sample.mp4")) { v ->
+            layout {
+                width = 100.percent
+                height = 300.px
+            }
+            style {
+                corner = 12.px
+            }
+            v.loop = true
+            v.volume = 0.8
+        }
+
+        video.play()
+        video.seekTo(video.position + 5.seconds)
+        video.onError { e -> println(e?.message) }
+    """,
 )
 
 // ---------------------------------------------------------------------------------------------
@@ -283,6 +367,10 @@ object ComponentsSample {
     }
 
     fun drawBasePane(frame: Frame) {
+        // Register every translation up front: keys are semantic English names now, so the registry
+        // must exist before any page builds its widgets (otherwise the raw keys would be rendered).
+        registerI18nTranslations()
+        registerAllTranslations()
         val toast = Toast(duration = 2600.milliseconds)
         frame.layout {
             draw(TabPane()) { pane ->
@@ -325,6 +413,8 @@ object ComponentsSample {
                 bindComboBox(pane)
                 bindLink(pane)
                 bindToast(pane, toast)
+                bindI18n(pane)
+                bindVideoPane(pane)
                 pane.select(0)
             }
 
@@ -344,6 +434,17 @@ object ComponentsSample {
      * The scaffold keeps every page on the same grid: an eyebrow, a headline, a quiet subtitle, then
      * whatever the caller draws in [body].
      */
+    private val relocalizers = mutableListOf<() -> Unit>()
+
+    private fun relocalize(block: () -> Unit) {
+        relocalizers += block
+        block()
+    }
+
+    private fun applyLanguage() {
+        relocalizers.forEach { it() }
+    }
+
     private fun TabPane.addPage(
         tabLabel: String,
         title: String,
@@ -351,6 +452,7 @@ object ComponentsSample {
         body: SurfaceScope<FlexBox>.() -> Unit,
     ): Button {
         val tab = add(Button(tabLabel))
+        tab.text(tabLabel.translatable)
         tab.applyLayout {
             height = 44.px
         }
@@ -388,14 +490,14 @@ object ComponentsSample {
                     bold = true,
                 )
                 text(
-                    content = title,
+                    content = title.translatable,
                     height = 40.px,
                     size = 29.0,
                     color = INK,
                     bold = true,
                 )
                 text(
-                    content = subtitle,
+                    content = subtitle.translatable,
                     height = 32.px,
                     size = 13.0,
                     color = MUTED,
@@ -419,8 +521,8 @@ object ComponentsSample {
         val source = code.trimIndent()
         val lineCount = source.lineSequence().count()
         val codeHeight = (lineCount * 17 + 8).coerceAtLeast(48).px
-        collapsePane(
-            title = "示例代码",
+        val samplePane = collapsePane(
+            title = I18N.content("code.title"),
             expandedHeight = 300.px,
             fill = NAVY,
             borderColor = Color.web("#243354"),
@@ -441,13 +543,14 @@ object ComponentsSample {
                 area.fontFamily = "Consolas"
             }
         }
+        relocalize { samplePane.title = I18N.content("code.title") }
     }
 
     private fun bindMain(pane: TabPane) {
         pane.addPage(
             tabLabel = "◆  Ovatoxin",
-            title = "组件总览",
-            subtitle = "十三种常用控件与布局容器的完整示例。左侧导航或下方卡片都可以切换页面，点击按钮、输入文字或勾选选项都能看到实时反馈。",
+            title = "overview.title",
+            subtitle = "overview.subtitle",
         ) {
             card(
                 height = 180.px,
@@ -464,14 +567,14 @@ object ComponentsSample {
                     bold = true,
                 )
                 text(
-                    content = "用代码构建漂亮的 JavaFX 界面",
+                    content = "overview.body.1".translatable,
                     height = 34.px,
                     size = 26.0,
                     color = Color.WHITE,
                     bold = true,
                 )
                 text(
-                    content = "声明式布局、可组合的组件与状态驱动的重绘，让界面代码保持清晰、直观、易于维护。",
+                    content = "overview.body.2".translatable,
                     height = 34.px,
                     size = 13.0,
                     color = ON_DARK,
@@ -491,7 +594,7 @@ object ComponentsSample {
                     row.align = Align.CENTER
                     row.layout {
                         button(
-                            label = "开始探索",
+                            label = "overview.label.1".translatable,
                             width = 130.px,
                             height = 34.px,
                             fill = Color.WHITE,
@@ -500,8 +603,8 @@ object ComponentsSample {
                             pane.select(1)
                         }
                         button(
-                            label = "退出应用",
-                            width = 104.px,
+                            label = "overview.label.2".translatable,
+                            width = 130.px,
                             height = 34.px,
                             fill = Color.TRANSPARENT,
                             foreground = Color.WHITE,
@@ -540,14 +643,14 @@ object ComponentsSample {
                         bold = true,
                     )
                     text(
-                        content = feature.description,
+                        content = feature.description.translatable,
                         height = 36.px,
                         size = 11.5,
                         color = MUTED,
                         wrap = true,
                     )
                     text(
-                        content = "查看示例",
+                        content = "overview.body.3".translatable,
                         height = 16.px,
                         size = 11.0,
                         color = feature.accent,
@@ -564,12 +667,12 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "▤  TextArea",
             title = "TextArea",
-            subtitle = "不可编辑的文本块。支持多行文本、自动换行、粗体与水平对齐，是页面说明文字最常用的载体。",
+            subtitle = "textarea.subtitle",
         ) {
             card(height = 430.px, pad = 22.0, gap = 12.0) {
-                text("一个安静的阅读区块", height = 28.px, size = 19.0, color = INK, bold = true)
+                text("textarea.text".translatable, height = 28.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "TextArea 的内容由 text 属性控制；wrap = true 会在宽度不足时自动换行，align 则决定每一行文字的水平位置。",
+                    content = "textarea.body.1".translatable,
                     height = 36.px,
                     size = 13.0,
                     color = MUTED,
@@ -587,8 +690,7 @@ object ComponentsSample {
                     }
                 }
                 text(
-                    content = "“好的界面不是堆叠控件，而是用清晰的层级、克制的颜色和稳定的间距，让内容自己说话。”\n\n" +
-                            "这段文字就是一个 TextArea。它没有输入框的边框，也没有按钮的装饰，只负责安静地呈递信息。",
+                    content = "textarea.intro".translatable,
                     height = 160.px,
                     size = 15.0,
                     color = INK,
@@ -608,7 +710,7 @@ object ComponentsSample {
                         bold = true
                     )
                     text(
-                        content = "你可以随时修改 text、fontSize、bold、align、wrap，下一次绘制就会生效。",
+                        content = "textarea.body.2".translatable,
                         height = 40.px,
                         size = 13.0,
                         color = MUTED,
@@ -623,19 +725,19 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "⌨  TextField",
             title = "TextField",
-            subtitle = "可编辑的单行输入框。支持占位提示、内容变化监听与回车提交；下面的表单会把输入同步到状态文本。",
+            subtitle = "textfield.subtitle",
         ) {
-            val live = State("输入内容会实时显示在这里。")
+            val live = State("textfield.state.1")
             card(height = 430.px, pad = 22.0, gap = 10.0) {
-                text("创建一个小表单", height = 28.px, size = 19.0, color = INK, bold = true)
+                text("textfield.text.1".translatable, height = 28.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "每个输入框都有自己的圆角与浅色背景。输入时会触发 onChange，让下方状态文本立刻更新。",
+                    content = "textfield.body".translatable,
                     height = 34.px,
                     size = 13.0,
                     color = MUTED,
                     wrap = true,
                 )
-                text("姓名", height = 18.px, size = 12.0, color = MUTED, bold = true)
+                text("textfield.text.2".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
                 val nameField = draw(TextField()) { field ->
                     layout {
                         width = 100.percent
@@ -653,9 +755,10 @@ object ComponentsSample {
                         foreground = INK
                         fontSize = 14.px
                     }
-                    field.hint = "请输入姓名"
+                    field.hint = I18N.content("textfield.hint")
+                    relocalize { field.hint = I18N.content("textfield.hint") }
                 }
-                text("邮箱", height = 18.px, size = 12.0, color = MUTED, bold = true)
+                text("textfield.text.3".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
                 val mailField = draw(TextField()) { field ->
                     layout {
                         width = 100.percent
@@ -676,10 +779,10 @@ object ComponentsSample {
                     field.hint = "name@example.com"
                 }
                 nameField.onChange {
-                    live.update("姓名：${nameField.text()}    邮箱：${mailField.text()}")
+                    live.update(I18N.content("textfield.prefix.name") + nameField.text() + "    " + I18N.content("textfield.prefix.email") + mailField.text())
                 }
                 mailField.onChange {
-                    live.update("姓名：${nameField.text()}    邮箱：${mailField.text()}")
+                    live.update(I18N.content("textfield.prefix.name") + nameField.text() + "    " + I18N.content("textfield.prefix.email") + mailField.text())
                 }
                 draw(FlexBox()) { row ->
                     style {
@@ -694,20 +797,20 @@ object ComponentsSample {
                     row.gap = 10.px
                     row.align = Align.CENTER
                     row.layout {
-                        button(label = "提交", width = 96.px, height = 38.px) {
-                            live.update("已提交：${nameField.text()} · ${mailField.text()}")
+                        button(label = "textfield.label.1".translatable, width = 96.px, height = 38.px) {
+                            live.update(I18N.content("textfield.prefix.submitted") + nameField.text() + " · " + mailField.text())
                         }
                         button(
-                            label = "清空",
+                            label = "textfield.label.2".translatable,
                             width = 96.px,
                             height = 38.px,
                             fill = Color.WHITE,
                             foreground = BRAND_DEEP,
                             borderColor = Color.web("#c9d9f7"),
                         ) {
-                            nameField.text = ""
-                            mailField.text = ""
-                            live.update("输入内容会实时显示在这里。")
+                            nameField.text("")
+                            mailField.text("")
+                            live.update("textfield.state.1")
                         }
                     }
                 }
@@ -721,7 +824,7 @@ object ComponentsSample {
                         foreground = MUTED
                     }
                     status.wrap = true
-                    status.text = live.value
+                    status.text(live.value.translatable)
                 }.withState(live)
             }
         }
@@ -731,13 +834,13 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "⬢  Button",
             title = "Button",
-            subtitle = "扁平按钮的几种常见形态：主按钮、描边按钮、胶囊按钮与禁用状态。点击后会更新下面的状态文本。",
+            subtitle = "button.subtitle",
         ) {
-            val feedback = State("点击任意按钮，这里会显示反馈。")
+            val feedback = State("button.state.1")
             card(height = 250.px, pad = 22.0, gap = 10.0) {
-                text("按钮样式", height = 26.px, size = 19.0, color = INK, bold = true)
+                text("button.text.1".translatable, height = 26.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "圆角、背景色与前景色都来自 style 块；onClick 可以挂在任何组件上。",
+                    content = "button.body.1".translatable,
                     height = 30.px,
                     size = 13.0,
                     color = MUTED,
@@ -756,36 +859,36 @@ object ComponentsSample {
                     row.gap = 10.px
                     row.align = Align.CENTER
                     row.layout {
-                        button(label = "主要按钮", width = 116.px, height = 42.px) {
-                            feedback.update("主要按钮被点击了 ✓")
+                        button(label = "button.label.1".translatable, width = 116.px, height = 42.px) {
+                            feedback.update("button.state.2")
                         }
                         button(
-                            label = "描边按钮",
+                            label = "button.label.2".translatable,
                             width = 116.px,
                             height = 42.px,
                             fill = Color.WHITE,
                             foreground = BRAND_DEEP,
                             borderColor = Color.web("#b9d1fb"),
                         ) {
-                            feedback.update("描边按钮被点击了 ✓")
+                            feedback.update("button.state.3")
                         }
                         button(
-                            label = "胶囊按钮",
+                            label = "button.label.3".translatable,
                             width = 116.px,
                             height = 42.px,
                             fill = MINT,
                             radius = 50.percent,
                         ) {
-                            feedback.update("胶囊按钮被点击了 ✓")
+                            feedback.update("button.state.4")
                         }
                         button(
-                            label = "禁用状态",
+                            label = "button.label.4".translatable,
                             width = 116.px,
                             height = 42.px,
                             fill = Color.web("#e9edf5"),
                             foreground = Color.web("#a2acbd"),
                         ) {
-                            feedback.update("这个按钮不应该被点击")
+                            feedback.update("button.state.5")
                         }.apply { enabled = false }
                     }
                 }
@@ -799,13 +902,13 @@ object ComponentsSample {
                         fontSize = 13.0.px
                     }
                     status.wrap = true
-                    status.text = feedback.value
+                    status.text(feedback.value.translatable)
                 }.withState(feedback)
             }
             card(height = 126.px, fill = BRAND_SOFT, borderColor = null, pad = 20.0, gap = 6.0) {
-                text("小提示", height = 18.px, size = 12.0, color = BRAND_DEEP, bold = true)
+                text("button.text.2".translatable, height = 18.px, size = 12.0, color = BRAND_DEEP, bold = true)
                 text(
-                    content = "Button 继承了组件的 onClick 能力；同一种写法也可以作用于 FlexBox、Div 等任意组件。",
+                    content = "button.body.2".translatable,
                     height = 40.px,
                     size = 13.0,
                     color = Color.web("#355f9f"),
@@ -820,12 +923,12 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "◐  ProgressBar",
             title = "ProgressBar",
-            subtitle = "进度条已经过的部分使用 foreground 指定的颜色，未经过的轨道使用 background。下面有一条自动循环的进度条。",
+            subtitle = "progress.subtitle",
         ) {
             card(height = 430.px, pad = 22.0, gap = 10.0) {
-                text("实时进度", height = 26.px, size = 19.0, color = INK, bold = true)
+                text("progress.text.1".translatable, height = 26.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "每隔 100ms 更新一次，状态变化只重绘与它绑定的组件。",
+                    content = "progress.body.1".translatable,
                     height = 30.px,
                     size = 13.0,
                     color = MUTED,
@@ -842,7 +945,7 @@ object ComponentsSample {
                         height = 24.px
                     }
                     row.layout {
-                        text("自动循环", width = 70.percent, height = 24.px, size = 13.0, color = INK)
+                        text("progress.text.2".translatable, width = 70.percent, height = 24.px, size = 13.0, color = INK)
                         bareTextArea { percentLabel ->
                             layout {
                                 width = 30.percent
@@ -854,7 +957,7 @@ object ComponentsSample {
                             }
                             percentLabel.align = TextAlignment.RIGHT
                             percentLabel.bold = true
-                            percentLabel.text = "${progress.value.value.toInt()}%"
+                            percentLabel.text("${progress.value.value.toInt()}%")
                         }.withState(progress)
                     }
                 }
@@ -884,12 +987,12 @@ object ComponentsSample {
                         }
                     }
                 }
-                text("不同的前景色", height = 24.px, size = 15.0, color = INK, bold = true)
+                text("progress.text.3".translatable, height = 24.px, size = 15.0, color = INK, bold = true)
                 progressBar(h = 14.px, value = 35.percent, tone = MINT, track = TRACK)
                 progressBar(h = 14.px, value = 62.percent, tone = AMBER, track = TRACK)
                 progressBar(h = 14.px, value = 88.percent, tone = VIOLET, track = TRACK)
                 text(
-                    content = "前景色由 style { foreground = ... } 控制，轨道颜色则来自 background。",
+                    content = "progress.body.2".translatable,
                     height = 30.px,
                     size = 12.5,
                     color = MUTED,
@@ -912,14 +1015,14 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "☰  ListView",
             title = "ListView",
-            subtitle = "可滚动的行列表，支持选中高亮与 onSelectItem 回调。点击左侧的任意一行，右侧详情会同步更新。",
+            subtitle = "listview.subtitle",
         ) {
             val selected = State<ListEntry?>(ENTRIES.first())
             card(height = 440.px, width = 57.percent, pad = 20.0, gap = 8.0) {
-                text("组件目录", height = 24.px, size = 17.0, color = INK, bold = true)
-                text("9 个条目  ·  可点击选择", height = 18.px, size = 11.5, color = FAINT)
+                text("listview.text.1".translatable, height = 24.px, size = 17.0, color = INK, bold = true)
+                text("listview.text.2".translatable, height = 18.px, size = 11.5, color = FAINT)
                 val list =
-                    draw(ListView(ENTRIES) { entry -> "${entry.glyph}   ${entry.name}      ·   ${entry.detail}" }) { view ->
+                    draw(ListView(ENTRIES) { entry -> "${entry.glyph}   ${entry.name}      ·   ${I18N.content(entry.detail)}" }) { view ->
                         layout {
                             width = 100.percent
                             height = 340.px
@@ -943,7 +1046,7 @@ object ComponentsSample {
             }
 
             card(height = 440.px, width = 41.percent, pad = 22.0, gap = 6.0) {
-                text("当前选中", height = 20.px, size = 11.0, color = FAINT, bold = true)
+                text("listview.text.3".translatable, height = 20.px, size = 11.0, color = FAINT, bold = true)
                 bareTextArea { icon ->
                     layout {
                         width = 100.percent
@@ -953,7 +1056,7 @@ object ComponentsSample {
                         fontSize = 26.0.px
                         foreground = BRAND
                     }
-                    icon.text = selected.value?.glyph ?: "◌"
+                    icon.text(selected.value?.glyph ?: "◌")
                 }.withState(selected)
                 bareTextArea { name ->
                     layout {
@@ -965,7 +1068,7 @@ object ComponentsSample {
                         foreground = INK
                     }
                     name.bold = true
-                    name.text = selected.value?.name ?: "未选择"
+                    name.text(selected.value?.name?.translatable ?: "listview.text.4".translatable)
                 }.withState(selected)
                 draw(Div()) {
                     layout {
@@ -989,10 +1092,10 @@ object ComponentsSample {
                         foreground = MUTED
                     }
                     detail.wrap = true
-                    detail.text = selected.value?.detail ?: "从左侧列表中选择一项。"
+                    detail.text(selected.value?.detail?.translatable ?: "listview.text.5".translatable)
                 }.withState(selected)
                 text(
-                    content = "提示：列表项是一个自定义的 ListEntry 数据类，渲染函数决定它怎么显示。",
+                    content = "listview.body".translatable,
                     height = 58.px,
                     size = 12.0,
                     color = FAINT,
@@ -1006,14 +1109,14 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "☑  CheckBox",
             title = "CheckBox",
-            subtitle = "带文字标题的勾选控件。每个选项都可以独立监听 onChange，页面底部的摘要会随选择实时变化。",
+            subtitle = "checkbox.subtitle",
         ) {
-            val chosen = State(setOf("启用动画"))
-            val options = listOf("启用动画", "显示网格", "高对比度", "自动保存")
+            val chosen = State(setOf("checkbox.item.1"))
+            val options = listOf("checkbox.item.1", "checkbox.item.2", "checkbox.item.3", "checkbox.item.4")
             card(height = 300.px, pad = 22.0, gap = 8.0) {
-                text("界面偏好设置", height = 28.px, size = 19.0, color = INK, bold = true)
+                text("checkbox.text.1".translatable, height = 28.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "勾选下面的选项，观察摘要如何随之更新。CheckBox 的样式同样来自 style 块。",
+                    content = "checkbox.body".translatable,
                     height = 30.px,
                     size = 13.0,
                     color = MUTED,
@@ -1032,6 +1135,7 @@ object ComponentsSample {
                             foreground = INK
                             fontSize = 14.px
                         }
+                        box.text(option.translatable)
                         box.checked = option in chosen.value
                         box.onChange { checked ->
                             chosen.update(if (checked) chosen.value + option else chosen.value - option)
@@ -1040,7 +1144,7 @@ object ComponentsSample {
                 }
             }
             card(height = 110.px, fill = BRAND_SOFT, borderColor = null, pad = 20.0, gap = 6.0) {
-                text("已选择", height = 18.px, size = 11.0, color = BRAND_DEEP, bold = true)
+                text("checkbox.text.2".translatable, height = 18.px, size = 11.0, color = BRAND_DEEP, bold = true)
                 bareTextArea { summary ->
                     layout {
                         width = 100.percent
@@ -1051,11 +1155,13 @@ object ComponentsSample {
                         foreground = Color.web("#355f9f")
                     }
                     summary.wrap = true
-                    summary.text = if (chosen.value.isEmpty()) {
-                        "尚未选择任何选项"
-                    } else {
-                        chosen.value.joinToString("  ·  ")
-                    }
+                    summary.text(
+                        if (chosen.value.isEmpty()) {
+                            "checkbox.text.3".translatable
+                        } else {
+                            chosen.value.joinToString("  ·  ") { I18N.content(it) }.translatable
+                        }
+                    )
                 }.withState(chosen)
             }
         }
@@ -1065,12 +1171,12 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "▦  FlexBox",
             title = "FlexBox",
-            subtitle = "从左到右排列子组件，一行放不下时自动换行。gap 控制间距，justify 控制主轴，align 控制交叉轴。",
+            subtitle = "flexbox.subtitle",
         ) {
             card(height = 420.px, pad = 22.0, gap = 10.0) {
-                text("自动换行", height = 26.px, size = 19.0, color = INK, bold = true)
+                text("flexbox.text.1".translatable, height = 26.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "下面一行放了很多宽度不同的色块，空间不够时它们会自动换到下一行。",
+                    content = "flexbox.body".translatable,
                     height = 30.px,
                     size = 13.0,
                     color = MUTED,
@@ -1126,7 +1232,7 @@ object ComponentsSample {
                         )
                     }
                 }
-                text("justify = SPACE_BETWEEN  ·  剩余空间平均分布在组件之间", height = 18.px, size = 11.0, color = FAINT)
+                text("flexbox.text.2".translatable, height = 18.px, size = 11.0, color = FAINT)
             }
         }
     }
@@ -1135,12 +1241,12 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "▭  Div",
             title = "Div",
-            subtitle = "一个透明的绝对定位绘制面板。子组件的百分比以 Div 自身为基准，因此可以像画布一样嵌套组合。",
+            subtitle = "div.subtitle",
         ) {
             card(height = 440.px, pad = 22.0, gap = 10.0) {
-                text("嵌套面板", height = 26.px, size = 19.0, color = INK, bold = true)
+                text("div.text.1".translatable, height = 26.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "左侧是父级 Div，右侧是子级 Div。每个子组件的位置与尺寸都相对它所在的面板计算。",
+                    content = "div.body".translatable,
                     height = 30.px,
                     size = 13.0,
                     color = MUTED,
@@ -1185,7 +1291,7 @@ object ComponentsSample {
                                     }
                                     headline.bold = true
                                     headline.wrap = true
-                                    headline.text = "父级 Div\n43% × 84%"
+                                    headline.text("div.text.2".translatable)
                                 }
                                 bareTextArea { note ->
                                     layout {
@@ -1199,7 +1305,7 @@ object ComponentsSample {
                                         foreground = ON_DARK
                                     }
                                     note.wrap = true
-                                    note.text = "子组件的位置和尺寸都以这个蓝色面板为基准，而不是整个页面。"
+                                    note.text("div.text.3".translatable)
                                 }
                             }
                         }
@@ -1221,7 +1327,7 @@ object ComponentsSample {
                                 }
                             }
                             topRight.layout {
-                                bareTextArea("嵌套卡片") { label ->
+                                bareTextArea("div.text.4".translatable) { label ->
                                     layout {
                                         x = 8.percent
                                         y = 18.percent
@@ -1234,7 +1340,7 @@ object ComponentsSample {
                                     }
                                     label.bold = true
                                 }
-                                bareTextArea("这里是一个白色卡片，同样由 Div 提供圆角与背景。") { label ->
+                                bareTextArea("div.text.5".translatable) { label ->
                                     layout {
                                         x = 8.percent
                                         y = 50.percent
@@ -1263,7 +1369,7 @@ object ComponentsSample {
                                 corner = 12.px
                             }
                             bottomRight.layout {
-                                bareTextArea("百分比会重新作用域") { label ->
+                                bareTextArea("div.text.6".translatable) { label ->
                                     layout {
                                         x = 8.percent
                                         y = 14.percent
@@ -1275,7 +1381,7 @@ object ComponentsSample {
                                         foreground = Color.web("#355f9f")
                                     }
                                     label.wrap = true
-                                    label.text = "同一个 50% 写在不同的 Div 里，指向的宽度不同。嵌套让局部布局互不干扰。"
+                                    label.text("div.text.7".translatable)
                                 }
                             }
                         }
@@ -1289,12 +1395,12 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "▢  Card",
             title = "Card",
-            subtitle = "带圆角、内边距与描边的内容面板。Card 继承自 FlexBox，内部仍按流式布局排列子组件，百分比也以卡片自身为基准。",
+            subtitle = "card.subtitle",
         ) {
             card(height = 214.px, pad = 22.0, gap = 8.0) {
-                text("一个卡片，三种用法", height = 28.px, size = 19.0, color = INK, bold = true)
+                text("card.text.1".translatable, height = 28.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "Card 的 h、w、fill、borderColor、pad、gap 与 corner 都可以在构造时指定；它既是一块绘制表面，也是一个 FlexBox。",
+                    content = "card.body.1".translatable,
                     height = 34.px,
                     size = 13.0,
                     color = MUTED,
@@ -1311,14 +1417,14 @@ object ComponentsSample {
                     )
                 ) { surface ->
                     surface.text(
-                        content = "直接使用 Card 类",
+                        content = "card.body.2".translatable,
                         h = 20.px,
                         size = 14.0,
                         color = BRAND_DEEP,
                         bold = true,
                     )
                     surface.text(
-                        content = "draw(Card(...)) { card -> card.text(...) } 适合需要自由组合子组件的场景。",
+                        content = "card.body.3".translatable,
                         h = 34.px,
                         size = 12.0,
                         color = Color.web("#355f9f"),
@@ -1346,9 +1452,9 @@ object ComponentsSample {
                         pad = 16.0,
                         gap = 6.0,
                     ) {
-                        text("基础卡片", height = 20.px, size = 15.0, color = INK, bold = true)
+                        text("card.text.2".translatable, height = 20.px, size = 15.0, color = INK, bold = true)
                         text(
-                            content = "白底、细描边与 16px 圆角，是默认的卡片外观。",
+                            content = "card.body.4".translatable,
                             height = 40.px,
                             size = 11.5,
                             color = MUTED,
@@ -1375,9 +1481,9 @@ object ComponentsSample {
                         pad = 16.0,
                         gap = 6.0,
                     ) {
-                        text("强调卡片", height = 20.px, size = 15.0, color = BRAND_DEEP, bold = true)
+                        text("card.text.3".translatable, height = 20.px, size = 15.0, color = BRAND_DEEP, bold = true)
                         text(
-                            content = "浅蓝底与无描边，适合承载提示、摘要与强调内容。",
+                            content = "card.body.5".translatable,
                             height = 40.px,
                             size = 11.5,
                             color = Color.web("#355f9f"),
@@ -1404,9 +1510,9 @@ object ComponentsSample {
                         pad = 16.0,
                         gap = 6.0,
                     ) {
-                        text("深色卡片", height = 20.px, size = 15.0, color = Color.WHITE, bold = true)
+                        text("card.text.4".translatable, height = 20.px, size = 15.0, color = Color.WHITE, bold = true)
                         text(
-                            content = "fill 可以换成任意颜色，文字颜色随之调整即可。",
+                            content = "card.body.6".translatable,
                             height = 40.px,
                             size = 11.5,
                             color = ON_DARK,
@@ -1435,9 +1541,9 @@ object ComponentsSample {
                 pad = 18.0,
                 gap = 6.0,
             ) {
-                text("百分比以卡片自身为基准", height = 18.px, size = 12.0, color = BRAND_DEEP, bold = true)
+                text("card.text.5".translatable, height = 18.px, size = 12.0, color = BRAND_DEEP, bold = true)
                 text(
-                    content = "在 Card 内部写 50.percent，得到的是卡片内容宽度的一半，而不是页面的一半。",
+                    content = "card.body.7".translatable,
                     height = 38.px,
                     size = 13.0,
                     color = MUTED,
@@ -1451,7 +1557,7 @@ object ComponentsSample {
         pane.addPage(
             tabLabel = "▥  CollapsePane",
             title = "CollapsePane",
-            subtitle = "带可点击标题栏的面板。收起时内容区完全隐藏且不占位，展开时内容区出现并获得标题栏以下的空间。",
+            subtitle = "collapse.subtitle",
         ) {
             card(
                 height = 142.px,
@@ -1460,9 +1566,9 @@ object ComponentsSample {
                 pad = 20.0,
                 gap = 6.0,
             ) {
-                text("一个标题栏，两种状态", height = 26.px, size = 18.0, color = BRAND_DEEP, bold = true)
+                text("collapse.text".translatable, height = 26.px, size = 18.0, color = BRAND_DEEP, bold = true)
                 text(
-                    content = "点击标题栏即可切换。收起时只保留 40px 高的标题栏；展开后整个面板到达 expandedHeight，内容区只占剩余空间，超出部分纵向滚动。",
+                    content = "collapse.body.1".translatable,
                     height = 54.px,
                     size = 12.5,
                     color = Color.web("#355f9f"),
@@ -1470,8 +1576,8 @@ object ComponentsSample {
                 )
             }
 
-            collapsePane(
-                title = "展开状态：标题栏 + 内容区",
+            val openPane = collapsePane(
+                title = I18N.content("collapse.title.1"),
                 expandedHeight = 224.px,
                 initiallyExpanded = true,
                 fill = Color.WHITE,
@@ -1481,7 +1587,7 @@ object ComponentsSample {
                 bodyGap = 8.0,
             ) {
                 text(
-                    content = "内容区是一个 scrollY = true 的 FlexBox，可以放任意子组件。",
+                    content = "collapse.body.2".translatable,
                     height = 40.px,
                     size = 12.5,
                     color = MUTED,
@@ -1501,14 +1607,14 @@ object ComponentsSample {
                     row.align = Align.CENTER
                     row.layout {
                         button(
-                            label = "主要操作",
+                            label = "collapse.label.1".translatable,
                             width = 104.px,
                             height = 34.px,
                             fill = BRAND,
                             foreground = Color.WHITE,
                         )
                         button(
-                            label = "次要操作",
+                            label = "collapse.label.2".translatable,
                             width = 104.px,
                             height = 34.px,
                             fill = BRAND_SOFT,
@@ -1517,16 +1623,17 @@ object ComponentsSample {
                     }
                 }
                 text(
-                    content = "把 bodyGap 调大、再加几行文字，内容超出后就会出现窄的纵向滚动条。",
+                    content = "collapse.body.3".translatable,
                     height = 48.px,
                     size = 12.0,
                     color = FAINT,
                     wrap = true,
                 )
             }
+            relocalize { openPane.title = I18N.content("collapse.title.1") }
 
-            collapsePane(
-                title = "默认收起：点击这一行标题栏即可展开或收起",
+            val closedPane = collapsePane(
+                title = I18N.content("collapse.title.2"),
                 expandedHeight = 190.px,
                 fill = NAVY,
                 borderColor = Color.web("#243354"),
@@ -1535,40 +1642,41 @@ object ComponentsSample {
                 bodyGap = 8.0,
             ) {
                 text(
-                    content = "收起时，这里的内容完全隐藏，也不会在页面上占据空白。",
+                    content = "collapse.body.4".translatable,
                     height = 40.px,
                     size = 12.5,
                     color = ON_DARK,
                     wrap = true,
                 )
                 text(
-                    content = "展开状态可以通过 expanded 属性读取，调用 toggle() 切换；这些状态变化会立刻触发重排。",
+                    content = "collapse.body.5".translatable,
                     height = 52.px,
                     size = 12.0,
                     color = Color.web("#a9c7ff"),
                     wrap = true,
                 )
             }
+            relocalize { closedPane.title = I18N.content("collapse.title.2") }
         }
     }
 
     private fun bindComboBox(pane: TabPane) {
-        val chosen = State("尚未选择任何选项")
+        val chosen = State("checkbox.text.3")
         pane.addPage(
             tabLabel = "≣  ComboBox",
             title = "ComboBox",
-            subtitle = "在一个字段里显示当前项，点击时下拉其余项。items 是实时集合，选择与每一行的文字都可以自定义。",
+            subtitle = "combobox.subtitle",
         ) {
             card(height = 412.px, pad = 22.0, gap = 10.0) {
-                text("下拉选择", height = 26.px, size = 19.0, color = INK, bold = true)
+                text("combobox.text.1".translatable, height = 26.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "下面演示普通选择、主题选择与禁用状态；添加按钮会直接修改 items，新的项会立刻出现在下拉框里。",
+                    content = "combobox.body".translatable,
                     height = 30.px,
                     size = 13.0,
                     color = MUTED,
                     wrap = true,
                 )
-                text("尺寸", height = 18.px, size = 12.0, color = MUTED, bold = true)
+                text("combobox.text.2".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
                 val sizeCombo = draw(ComboBox(listOf("Small", "Medium", "Large"))) { combo ->
                     layout {
                         width = 100.percent
@@ -1586,11 +1694,12 @@ object ComponentsSample {
                         foreground = INK
                         fontSize = 14.px
                     }
-                    combo.prompt = "请选择尺寸"
-                    combo.onSelectItem { value -> chosen.update("尺寸：$value") }
+                    combo.prompt = I18N.content("combobox.prompt.1")
+                    relocalize { combo.prompt = I18N.content("combobox.prompt.1") }
+                    combo.onSelectItem { value -> chosen.update(I18N.content("combobox.prefix.size") + value) }
                 }
-                text("主题", height = 18.px, size = 12.0, color = MUTED, bold = true)
-                val themes = listOf("浅色", "深色", "跟随系统")
+                text("combobox.text.3".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
+                val themes = listOf("combobox.item.1", "combobox.item.2", "combobox.item.3")
                 draw(ComboBox(themes)) { combo ->
                     layout {
                         width = 100.percent
@@ -1608,11 +1717,12 @@ object ComponentsSample {
                         foreground = INK
                         fontSize = 14.px
                     }
-                    combo.prompt = "请选择主题"
-                    combo.onSelect { index -> chosen.update("主题：${themes[index]}") }
+                    combo.prompt = I18N.content("combobox.prompt.2")
+                    relocalize { combo.prompt = I18N.content("combobox.prompt.2") }
+                    combo.onSelect { index -> chosen.update(I18N.content("combobox.prefix.theme") + I18N.content(themes[index])) }
                 }
-                text("禁用状态", height = 18.px, size = 12.0, color = MUTED, bold = true)
-                draw(ComboBox(listOf("不可选择"))) { combo ->
+                text("button.label.4".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
+                draw(ComboBox(listOf("combobox.item.4"))) { combo ->
                     layout {
                         width = 100.percent
                         height = 42.px
@@ -1629,7 +1739,8 @@ object ComponentsSample {
                         foreground = FAINT
                         fontSize = 14.px
                     }
-                    combo.prompt = "已禁用"
+                    combo.prompt = I18N.content("combobox.prompt.3")
+                    relocalize { combo.prompt = I18N.content("combobox.prompt.3") }
                     combo.enabled = false
                 }
                 draw(FlexBox()) { row ->
@@ -1645,13 +1756,13 @@ object ComponentsSample {
                     row.gap = 10.px
                     row.align = Align.CENTER
                     row.layout {
-                        button(label = "添加自定义尺寸", width = 160.px, height = 36.px) {
-                            val name = "自定义 ${sizeCombo.size + 1}"
+                        button(label = "combobox.label.1".translatable, width = 160.px, height = 36.px) {
+                            val name = I18N.content("combobox.custom_prefix") + (sizeCombo.size + 1)
                             sizeCombo.items.add(name)
-                            chosen.update("已添加项目：$name")
+                            chosen.update(I18N.content("combobox.prefix.added") + name)
                         }
                         button(
-                            label = "清空选择",
+                            label = "combobox.label.2".translatable,
                             width = 112.px,
                             height = 36.px,
                             fill = Color.WHITE,
@@ -1659,13 +1770,13 @@ object ComponentsSample {
                             borderColor = Color.web("#c9d9f7"),
                         ) {
                             sizeCombo.clearSelection()
-                            chosen.update("已清空尺寸选择")
+                            chosen.update("combobox.state.4")
                         }
                     }
                 }
             }
             card(height = 112.px, fill = BRAND_SOFT, borderColor = null, pad = 20.0, gap = 6.0) {
-                text("当前选择", height = 18.px, size = 11.0, color = BRAND_DEEP, bold = true)
+                text("combobox.text.4".translatable, height = 18.px, size = 11.0, color = BRAND_DEEP, bold = true)
                 bareTextArea { status ->
                     layout {
                         width = 100.percent
@@ -1676,30 +1787,31 @@ object ComponentsSample {
                         foreground = Color.web("#355f9f")
                     }
                     status.wrap = true
-                    status.text = chosen.value
+                    status.text(chosen.value.translatable)
                 }.withState(chosen)
             }
         }
     }
 
     private fun bindLink(pane: TabPane) {
-        val clicked = State("尚未点击任何链接")
+        val clicked = State("link.state.1")
         pane.addPage(
             tabLabel = "↗  Link",
             title = "Link",
-            subtitle = "表现成超链接的文字：带下划线、悬停为手形光标，点击后在系统浏览器中打开 URL。onClick 可以替换默认的浏览器行为。",
+            subtitle = "link.subtitle",
         ) {
             card(height = 372.px, pad = 22.0, gap = 10.0) {
-                text("链接的三种形态", height = 26.px, size = 19.0, color = INK, bold = true)
+                text("link.text.1".translatable, height = 26.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "默认链接会打开浏览器；修改 foreground 可以改变颜色；注册 onClick 后则只执行自定义逻辑。",
+                    content = "link.body.1".translatable,
                     height = 30.px,
                     size = 13.0,
                     color = MUTED,
                     wrap = true,
                 )
-                text("打开默认浏览器", height = 18.px, size = 12.0, color = MUTED, bold = true)
-                draw(Link("Ovatoxin 项目主页", "https://github.com/cao-awa/Ovatoxin")) { link ->
+                text("link.text.2".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
+                draw(Link("link.text.3", "https://github.com/cao-awa/Ovatoxin")) { link ->
+                    link.text("link.text.3".translatable)
                     layout {
                         width = 100.percent
                         height = 32.px
@@ -1708,10 +1820,10 @@ object ComponentsSample {
                         fontSize = 15.px
                     }
                 }
-                text("覆盖前景色", height = 18.px, size = 12.0, color = MUTED, bold = true)
-                draw(
+                text("link.text.4".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
+                val docLink = draw(
                     Link(
-                        "阅读组件文档",
+                        "link.text.5",
                         "https://github.com/cao-awa/Ovatoxin/blob/main/docs/component/README_zh.md",
                     )
                 ) {
@@ -1724,8 +1836,10 @@ object ComponentsSample {
                         foreground = MINT
                     }
                 }
-                text("自定义点击行为", height = 18.px, size = 12.0, color = MUTED, bold = true)
-                draw(Link("点我更新状态", "")) { link ->
+                docLink.text("link.text.5".translatable)
+                text("link.text.6".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
+                draw(Link("link.text.7", "")) { link ->
+                    link.text("link.text.7".translatable)
                     layout {
                         width = 100.percent
                         height = 32.px
@@ -1734,10 +1848,10 @@ object ComponentsSample {
                         fontSize = 15.px
                         foreground = VIOLET
                     }
-                    link.onClick { clicked.update("自定义链接被点击了 ✓") }
+                    link.onClick { clicked.update("link.state.2") }
                 }
                 text(
-                    content = "链接的 url 为空时，点击不会打开任何东西；注册 onClick 后，链接只执行处理器，不再打开浏览器。",
+                    content = "link.body.2".translatable,
                     height = 30.px,
                     size = 12.5,
                     color = MUTED,
@@ -1745,7 +1859,7 @@ object ComponentsSample {
                 )
             }
             card(height = 112.px, fill = BRAND_SOFT, borderColor = null, pad = 20.0, gap = 6.0) {
-                text("点击反馈", height = 18.px, size = 11.0, color = BRAND_DEEP, bold = true)
+                text("link.text.8".translatable, height = 18.px, size = 11.0, color = BRAND_DEEP, bold = true)
                 bareTextArea { status ->
                     layout {
                         width = 100.percent
@@ -1756,29 +1870,29 @@ object ComponentsSample {
                         foreground = Color.web("#355f9f")
                     }
                     status.wrap = true
-                    status.text = clicked.value
+                    status.text(clicked.value.translatable)
                 }.withState(clicked)
             }
         }
     }
 
     private fun bindToast(pane: TabPane, toast: Toast) {
-        val last = State("还没有弹出 Toast。点击上面的按钮试试。")
+        val last = State("toast.state.1")
         pane.addPage(
             tabLabel = "◍  Toast",
             title = "Toast",
-            subtitle = "自动消失的浮动提示。它画在页面最上层，按信息、成功、警告、错误四种语气着色，还能居中显示、绘制任意组件，或用遮罩让页面变灰。",
+            subtitle = "toast.subtitle",
         ) {
             card(height = 430.px, pad = 22.0, gap = 10.0) {
-                text("四种语气", height = 26.px, size = 19.0, color = INK, bold = true)
+                text("toast.text.1".translatable, height = 26.px, size = 19.0, color = INK, bold = true)
                 text(
-                    content = "点击按钮调用 toast.show(...)。消息默认从窗口底部淡入，停留 2.6 秒后再自动淡出；再次触发会替换当前卡片并重新计时。",
+                    content = "toast.body.1".translatable,
                     height = 38.px,
                     size = 13.0,
                     color = MUTED,
                     wrap = true,
                 )
-                text("提示类型", height = 18.px, size = 12.0, color = MUTED, bold = true)
+                text("toast.text.2".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
                 draw(FlexBox()) { row ->
                     style {
                         background {
@@ -1793,44 +1907,44 @@ object ComponentsSample {
                     row.align = Align.CENTER
                     row.layout {
                         button(
-                            label = "信息提示",
+                            label = "toast.label.1".translatable,
                             width = 112.px,
                             height = 36.px,
                             fill = ToastTone.INFO.background,
                         ) {
-                            toast.show("普通信息：操作已完成。", tone = ToastTone.INFO)
-                            last.update("信息提示 · 底部居中 · 2.6 秒")
+                            toast.show(I18N.content("toast.text.3"), tone = ToastTone.INFO)
+                            last.update("toast.state.2")
                         }
                         button(
-                            label = "成功提示",
+                            label = "toast.label.2".translatable,
                             width = 112.px,
                             height = 36.px,
                             fill = ToastTone.SUCCESS.background,
                         ) {
-                            toast.show("保存成功：设置已经更新。", tone = ToastTone.SUCCESS)
-                            last.update("成功提示 · 底部居中 · 2.6 秒")
+                            toast.show(I18N.content("toast.text.4"), tone = ToastTone.SUCCESS)
+                            last.update("toast.state.3")
                         }
                         button(
-                            label = "警告提示",
+                            label = "toast.label.3".translatable,
                             width = 112.px,
                             height = 36.px,
                             fill = ToastTone.WARNING.background,
                         ) {
-                            toast.show("请注意：当前操作不可撤销。", tone = ToastTone.WARNING)
-                            last.update("警告提示 · 底部居中 · 2.6 秒")
+                            toast.show(I18N.content("toast.text.5"), tone = ToastTone.WARNING)
+                            last.update("toast.state.4")
                         }
                         button(
-                            label = "错误提示",
+                            label = "toast.label.4".translatable,
                             width = 112.px,
                             height = 36.px,
                             fill = ToastTone.ERROR.background,
                         ) {
-                            toast.show("请求失败：请检查网络连接。", tone = ToastTone.ERROR)
-                            last.update("错误提示 · 底部居中 · 2.6 秒")
+                            toast.show(I18N.content("toast.text.6"), tone = ToastTone.ERROR)
+                            last.update("toast.state.5")
                         }
                     }
                 }
-                text("位置与时长", height = 18.px, size = 12.0, color = MUTED, bold = true)
+                text("toast.text.7".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
                 draw(FlexBox()) { row ->
                     style {
                         background {
@@ -1845,45 +1959,45 @@ object ComponentsSample {
                     row.align = Align.CENTER
                     row.layout {
                         button(
-                            label = "顶部居中",
+                            label = "toast.label.5".translatable,
                             width = 104.px,
                             height = 36.px,
                             fill = BRAND_DEEP,
                         ) {
                             toast.show(
-                                message = "这条提示出现在窗口顶部。",
+                                message = I18N.content("toast.text.8"),
                                 position = ToastPosition.TOP_CENTER,
                             )
-                            last.update("自定义位置 · 顶部居中")
+                            last.update("toast.state.6")
                         }
                         button(
-                            label = "居中提示",
+                            label = "toast.label.6".translatable,
                             width = 104.px,
                             height = 36.px,
                             fill = Color.web("#0f766e"),
                         ) {
                             toast.show(
-                                message = "这条提示出现在窗口正中央。",
+                                message = I18N.content("toast.text.9"),
                                 position = ToastPosition.CENTER,
                             )
-                            last.update("自定义位置 · 居中")
+                            last.update("toast.state.7")
                         }
                         button(
-                            label = "长消息 · 3.5 秒",
+                            label = "toast.label.7".translatable,
                             width = 156.px,
                             height = 36.px,
                             fill = VIOLET,
                         ) {
                             toast.show(
-                                message = "这是一条比较长的 Toast 消息，卡片会限制最大宽度并自动换行，长文本也不会撑破窗口。",
+                                message = I18N.content("toast.text.10"),
                                 duration = 3500.milliseconds,
                                 tone = ToastTone.INFO,
                             )
-                            last.update("长消息 · 底部居中 · 3.5 秒")
+                            last.update("toast.state.8")
                         }
                     }
                 }
-                text("组件内容与遮罩", height = 18.px, size = 12.0, color = MUTED, bold = true)
+                text("toast.text.11".translatable, height = 18.px, size = 12.0, color = MUTED, bold = true)
                 draw(FlexBox()) { row ->
                     style {
                         background {
@@ -1898,7 +2012,7 @@ object ComponentsSample {
                     row.align = Align.CENTER
                     row.layout {
                         button(
-                            label = "组件内容",
+                            label = "toast.label.8".translatable,
                             width = 112.px,
                             height = 36.px,
                             fill = MINT,
@@ -1908,16 +2022,16 @@ object ComponentsSample {
                                 position = ToastPosition.CENTER,
                                 tone = ToastTone.SUCCESS,
                             ) {
-                                text("组件内容 Toast", height = 24.px, size = 17.0, color = Color.WHITE, bold = true)
+                                text("toast.text.12".translatable, height = 24.px, size = 17.0, color = Color.WHITE, bold = true)
                                 text(
-                                    content = "卡片里可以放任意组件：说明文字、按钮、输入框都可以用熟悉的 draw DSL 画出来。",
+                                    content = "toast.body.2".translatable,
                                     height = 36.px,
                                     size = 12.5,
                                     color = Color.web("#ecfdf5"),
                                     wrap = true,
                                 )
                                 button(
-                                    label = "知道了",
+                                    label = "toast.label.9".translatable,
                                     width = 112.px,
                                     height = 34.px,
                                     fill = Color.WHITE,
@@ -1926,10 +2040,10 @@ object ComponentsSample {
                                     toast.dismiss()
                                 }
                             }
-                            last.update("组件内容 · 居中 · 5 秒")
+                            last.update("toast.state.9")
                         }
                         button(
-                            label = "遮罩变灰",
+                            label = "toast.label.10".translatable,
                             width = 112.px,
                             height = 36.px,
                             fill = ROSE,
@@ -1940,16 +2054,16 @@ object ComponentsSample {
                                 tone = ToastTone.INFO,
                                 dimOutside = true,
                             ) {
-                                text("遮罩提示", height = 24.px, size = 17.0, color = Color.WHITE, bold = true)
+                                text("toast.text.13".translatable, height = 24.px, size = 17.0, color = Color.WHITE, bold = true)
                                 text(
-                                    content = "Toast 之外的区域会变灰并暂时无法点击，卡片内的按钮仍然可以正常操作。",
+                                    content = "toast.body.3".translatable,
                                     height = 36.px,
                                     size = 12.5,
                                     color = ON_DARK,
                                     wrap = true,
                                 )
                                 button(
-                                    label = "我知道了",
+                                    label = "toast.label.11".translatable,
                                     width = 124.px,
                                     height = 34.px,
                                     fill = Color.WHITE,
@@ -1958,12 +2072,12 @@ object ComponentsSample {
                                     toast.dismiss()
                                 }
                             }
-                            last.update("遮罩变灰 · 居中 · 5 秒")
+                            last.update("toast.state.10")
                         }
                     }
                 }
                 text(
-                    content = "普通消息的 Toast 浮层仍是鼠标透明的；带组件内容时卡片本身可操作，开启 dimOutside 后才会用遮罩压暗并挡住页面其余部分。",
+                    content = "toast.body.4".translatable,
                     height = 38.px,
                     size = 12.5,
                     color = MUTED,
@@ -1971,7 +2085,7 @@ object ComponentsSample {
                 )
             }
             card(height = 112.px, fill = BRAND_SOFT, borderColor = null, pad = 20.0, gap = 6.0) {
-                text("最近一次触发", height = 18.px, size = 11.0, color = BRAND_DEEP, bold = true)
+                text("toast.text.14".translatable, height = 18.px, size = 11.0, color = BRAND_DEEP, bold = true)
                 bareTextArea { status ->
                     layout {
                         width = 100.percent
@@ -1982,8 +2096,225 @@ object ComponentsSample {
                         foreground = Color.web("#355f9f")
                     }
                     status.wrap = true
-                    status.text = last.value
+                    status.text(last.value.translatable)
                 }.withState(last)
+            }
+        }
+    }
+
+    private fun bindI18n(pane: TabPane) {
+        pane.addPage(
+            tabLabel = "i18n.tab",
+            title = "i18n.title",
+            subtitle = "i18n.subtitle",
+        ) {
+            card(height = 172.px, pad = 22.0, gap = 8.0) {
+                text(
+                    content = "i18n.headline".translatable,
+                    height = 34.px,
+                    size = 24.0,
+                    color = INK,
+                    bold = true,
+                )
+                text(
+                    content = "i18n.intro".translatable,
+                    height = 96.px,
+                    size = 13.0,
+                    color = MUTED,
+                    wrap = true,
+                )
+            }
+            card(height = 244.px, pad = 22.0, gap = 10.0) {
+                text(
+                    content = "i18n.label.language".translatable,
+                    height = 18.px,
+                    size = 12.0,
+                    color = MUTED,
+                    bold = true,
+                )
+                val languageCombo = draw(ComboBox(LANGUAGES) { it.label }) { combo ->
+                    layout {
+                        width = 100.percent
+                        height = 44.px
+                    }
+                    style {
+                        background {
+                            color = Color.web("#f8fafc")
+                        }
+                        corner = 10.px
+                        border {
+                            size = 1.px
+                            color = LINE
+                        }
+                        foreground = INK
+                        fontSize = 14.px
+                    }
+                    combo.selectedIndex =
+                        (LANGUAGES.indexOfFirst { it.code == I18N.currentLang }.coerceAtLeast(0))
+                    combo.onSelectItem { language -> I18N.currentLang = language.code; applyLanguage() }
+                }
+                text(
+                    content = "i18n.greeting".translatable,
+                    height = 48.px,
+                    size = 24.0,
+                    color = BRAND_DEEP,
+                    bold = true,
+                )
+                draw(FlexBox()) { row ->
+                    layout {
+                        width = 100.percent
+                        height = 40.px
+                    }
+                    row.gap = 10.px
+                    row.align = Align.CENTER
+                    row.layout {
+                        button(
+                            label = "i18n.button.switch".translatable,
+                            width = 220.px,
+                            height = 38.px,
+                            fill = BRAND,
+                            foreground = Color.WHITE,
+                        ) {
+                            val current = LANGUAGES.indexOfFirst { it.code == I18N.currentLang }
+                                .let { if (it < 0) 0 else it }
+                            val nextIndex = (current + 1) % LANGUAGES.size
+                            I18N.currentLang = LANGUAGES[nextIndex].code
+                            applyLanguage()
+                            languageCombo.selectedIndex = nextIndex
+                        }
+                    }
+                }
+            }
+            card(height = 262.px, pad = 22.0, gap = 10.0) {
+                text(
+                    content = "i18n.compare.title".translatable,
+                    height = 24.px,
+                    size = 15.0,
+                    color = INK,
+                    bold = true,
+                )
+                text(
+                    content = "i18n.compare.literal".translatable,
+                    height = 18.px,
+                    size = 12.0,
+                    color = MUTED,
+                )
+                bareTextArea("i18n.greeting") { area ->
+                    layout {
+                        width = 100.percent
+                        height = 26.px
+                    }
+                    style {
+                        fontSize = 16.0.px
+                        foreground = ROSE
+                    }
+                }
+                text(
+                    content = "i18n.compare.translatable".translatable,
+                    height = 18.px,
+                    size = 12.0,
+                    color = MUTED,
+                )
+                bareTextArea("i18n.greeting".translatable) { area ->
+                    layout {
+                        width = 100.percent
+                        height = 26.px
+                    }
+                    style {
+                        fontSize = 16.0.px
+                        foreground = MINT
+                    }
+                    area.bold = true
+                }
+                text(
+                    content = "i18n.compare.note".translatable,
+                    height = 40.px,
+                    size = 12.0,
+                    color = MUTED,
+                    wrap = true,
+                )
+            }
+        }
+    }
+
+    private fun bindVideoPane(pane: TabPane) {
+        pane.addPage(
+            tabLabel = "▶  VideoPane",
+            title = "VideoPane",
+            subtitle = "video.subtitle",
+        ) {
+            val video = draw(VideoPane("classpath:/media/sample.mp4")) { v ->
+                layout {
+                    width = 100.percent
+                    height = 300.px
+                }
+                style {
+                    corner = 12.px
+                }
+                v.loop = true
+                v.volume = 0.8
+            }
+            card(height = 150.px, pad = 16.0, gap = 10.0) {
+                text("video.text.1".translatable, height = 20.px, size = 13.0, color = INK, bold = true)
+                draw(FlexBox()) { row ->
+                    layout {
+                        width = 100.percent
+                        height = 40.px
+                    }
+                    row.gap = 8.px
+                    row.align = Align.CENTER
+                    row.layout {
+                        button(
+                            label = "video.label.1".translatable,
+                            width = 108.px,
+                            height = 38.px,
+                            fill = BRAND,
+                            foreground = Color.WHITE,
+                        ) {
+                            video.togglePlayPause()
+                        }
+                        button(label = "video.label.2".translatable, width = 80.px, height = 38.px) {
+                            video.stop()
+                        }
+                        button(label = "video.label.3".translatable, width = 96.px, height = 38.px) {
+                            video.muted = !video.muted
+                        }
+                        button(label = "video.label.4".translatable, width = 96.px, height = 38.px) {
+                            video.loop = !video.loop
+                        }
+                        button(label = "video.label.5".translatable, width = 96.px, height = 38.px) {
+                            video.seekTo(video.position + 5.seconds)
+                        }
+                        button(
+                            label = "video.label.6".translatable,
+                            width = 96.px,
+                            height = 38.px,
+                            fill = Color.WHITE,
+                            foreground = BRAND_DEEP,
+                            borderColor = Color.web("#c9d9f7"),
+                        ) {
+                            video.seekTo(Duration.ZERO)
+                            video.play()
+                        }
+                    }
+                }
+                val statusText = text("video.text.2".translatable, height = 18.px, size = 12.0, color = MUTED)
+                video.onReady { statusText.text("video.text.3".translatable) }
+                video.onEnd { statusText.text("video.text.4".translatable) }
+                video.onError { error -> statusText.text(I18N.content("video.prefix.error") + (error?.message ?: I18N.content("video.error.unknown"))) }
+                video.onStatusChanged { status ->
+                    val label = when (status.name) {
+                        "READY" -> I18N.content("video.text.7")
+                        "PLAYING" -> I18N.content("video.text.8")
+                        "PAUSED" -> I18N.content("video.text.9")
+                        "STOPPED" -> I18N.content("video.text.10")
+                        "STALLED" -> I18N.content("video.text.11")
+                        "HALTED" -> I18N.content("video.text.12")
+                        "DISPOSED" -> I18N.content("video.text.13")
+                        else -> status.name
+                    }
+                    statusText.text(I18N.content("video.prefix.status") + label)
+                }
             }
         }
     }
